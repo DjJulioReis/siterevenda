@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HostManager - Painel de Revenda de Hospedagem</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <style>
+    body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .sidebar { background-color: #1e293b; min-height: 100vh; color: #fff; }
+    .sidebar .nav-link { color: #cbd5e1; font-weight: 500; margin-bottom: 0.25rem; border-radius: 6px; }
+    .sidebar .nav-link:hover, .sidebar .nav-link.active { background-color: #334155; color: #fff; }
+    .card-stat { border: none; border-radius: 12px; transition: transform 0.2s; }
+    .card-stat:hover { transform: translateY(-2px); }
+    .status-badge { font-size: 0.85rem; padding: 0.35em 0.65em; border-radius: 20px; }
+    .bg-active { background-color: #d1fae5; color: #065f46; }
+    .bg-suspended { background-color: #fee2e2; color: #991b1b; }
+    .bg-pending { background-color: #fef3c7; color: #92400e; }
+    .bg-overdue { background-color: #fecaca; color: #991b1b; }
+    .bg-paid { background-color: #d1fae5; color: #065f46; }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <nav class="col-md-3 col-lg-2 sidebar p-3">
+        <div class="d-flex align-items-center mb-4">
+          <i class="bi bi-hdd-network fs-3 text-primary me-2"></i>
+          <span class="fs-4 fw-bold">HostManager</span>
+        </div>
+        <hr class="text-secondary">
+        <ul class="nav nav-pills flex-column">
+          <li class="nav-item">
+            <a class="nav-link active" href="#" onclick="showSection('dashboard', this)">
+              <i class="bi bi-speedometer2 me-2"></i> Dashboard
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showSection('accounts', this)">
+              <i class="bi bi-server me-2"></i> Contas de Hospedagem
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showSection('clients', this)">
+              <i class="bi bi-people me-2"></i> Clientes
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showSection('invoices', this)">
+              <i class="bi bi-receipt me-2"></i> Faturas e Cobranças
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showSection('plans', this)">
+              <i class="bi bi-box-seam me-2"></i> Planos de Hospedagem
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showSection('logs', this)">
+              <i class="bi bi-journal-text me-2"></i> Logs do Sistema
+            </a>
+          </li>
+        </ul>
+        <hr class="text-secondary mt-auto">
+        <div class="bg-dark p-3 rounded">
+          <h6 class="text-warning mb-2"><i class="bi bi-shield-lock me-1"></i> Regra de Bloqueio</h6>
+          <p class="small text-muted mb-0">Contas com faturas em atraso por 7 dias ou mais são suspensas automaticamente pelo sistema.</p>
+        </div>
+      </nav>
+
+      <!-- Main Content -->
+      <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+
+        <!-- Alerts Area -->
+        <div id="alertContainer"></div>
+
+        <!-- Dashboard Section -->
+        <section id="sec-dashboard">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h3 fw-bold">Visão Geral</h2>
+            <button class="btn btn-warning" onclick="triggerOverdueCheck(7)">
+              <i class="bi bi-arrow-repeat me-1"></i> Simular Rotina de Bloqueio (7 Dias)
+            </button>
+          </div>
+
+          <!-- Cards Stats -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-3">
+              <div class="card card-stat bg-white shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="text-muted small">Contas Ativas</div>
+                    <div class="fs-3 fw-bold text-success" id="statActiveAccounts">0</div>
+                  </div>
+                  <div class="bg-success-subtle p-3 rounded"><i class="bi bi-check-circle fs-3 text-success"></i></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card card-stat bg-white shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="text-muted small">Contas Suspensas (Atraso)</div>
+                    <div class="fs-3 fw-bold text-danger" id="statSuspendedAccounts">0</div>
+                  </div>
+                  <div class="bg-danger-subtle p-3 rounded"><i class="bi bi-slash-circle fs-3 text-danger"></i></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card card-stat bg-white shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="text-muted small">Faturas Atrasadas</div>
+                    <div class="fs-3 fw-bold text-warning" id="statOverdueInvoices">0</div>
+                  </div>
+                  <div class="bg-warning-subtle p-3 rounded"><i class="bi bi-exclamation-triangle fs-3 text-warning"></i></div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="card card-stat bg-white shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <div class="text-muted small">Receita Total</div>
+                    <div class="fs-3 fw-bold text-primary" id="statTotalRevenue">R$ 0,00</div>
+                  </div>
+                  <div class="bg-primary-subtle p-3 rounded"><i class="bi bi-currency-dollar fs-3 text-primary"></i></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Action / Accounts Overview -->
+          <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+              <h5 class="mb-0 fw-bold">Últimas Contas Cadastradas</h5>
+              <button class="btn btn-sm btn-primary" onclick="showSection('accounts')">Ver Todas</button>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Domínio</th>
+                      <th>Cliente</th>
+                      <th>Plano</th>
+                      <th>Status</th>
+                      <th>Criado em</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashAccountsTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Accounts Section -->
+        <section id="sec-accounts" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h3 fw-bold">Gerenciar Contas de Hospedagem</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newAccountModal">
+              <i class="bi bi-plus-lg me-1"></i> Nova Conta de Hospedagem
+            </button>
+          </div>
+          <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>ID</th>
+                      <th>Domínio</th>
+                      <th>Usuário</th>
+                      <th>Cliente</th>
+                      <th>Plano</th>
+                      <th>Status</th>
+                      <th>Motivo Bloqueio</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="accountsTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Clients Section -->
+        <section id="sec-clients" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h3 fw-bold">Clientes</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newClientModal">
+              <i class="bi bi-person-plus me-1"></i> Novo Cliente
+            </button>
+          </div>
+          <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>ID</th>
+                      <th>Nome</th>
+                      <th>Email</th>
+                      <th>Telefone</th>
+                      <th>CPF/CNPJ</th>
+                      <th>Cadastrado em</th>
+                    </tr>
+                  </thead>
+                  <tbody id="clientsTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Invoices Section -->
+        <section id="sec-invoices" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h3 fw-bold">Faturas e Recebimentos</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newInvoiceModal">
+              <i class="bi bi-file-earmark-plus me-1"></i> Gerar Fatura Avançada
+            </button>
+          </div>
+          <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th># Fatura</th>
+                      <th>Domínio / Cliente</th>
+                      <th>Valor</th>
+                      <th>Vencimento</th>
+                      <th>Status</th>
+                      <th>Pagamento</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody id="invoicesTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Plans Section -->
+        <section id="sec-plans" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h3 fw-bold">Planos de Hospedagem Disponíveis</h2>
+          </div>
+          <div class="row g-4" id="plansContainer"></div>
+        </section>
+
+        <!-- Logs Section -->
+        <section id="sec-logs" style="display:none;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="h3 fw-bold">Logs de Auditoria e Automação</h2>
+          </div>
+          <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-sm table-striped mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>ID</th>
+                      <th>Ação</th>
+                      <th>Detalhes</th>
+                      <th>Data/Hora</th>
+                    </tr>
+                  </thead>
+                  <tbody id="logsTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Modal: Novo Cliente -->
+  <div class="modal fade" id="newClientModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="formNewClient" onsubmit="createClient(event)">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Novo Cliente</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Nome Completo</label>
+              <input type="text" id="clientName" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <input type="email" id="clientEmail" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Telefone / WhatsApp</label>
+              <input type="text" id="clientPhone" class="form-control">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">CPF / CNPJ</label>
+              <input type="text" id="clientCpf" class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar Cliente</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Nova Conta de Hospedagem -->
+  <div class="modal fade" id="newAccountModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="formNewAccount" onsubmit="createAccount(event)">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Nova Conta de Hospedagem</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Cliente</label>
+              <select id="accountClientSelect" class="form-select" required></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Plano de Hospedagem</label>
+              <select id="accountPlanSelect" class="form-select" required></select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Domínio Principal</label>
+              <input type="text" id="accountDomain" class="form-control" placeholder="ex: meudominio.com.br" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Usuário cPanel / Painel</label>
+              <input type="text" id="accountUsername" class="form-control" placeholder="ex: meudominio" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Criar Conta</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Pagar Fatura (Simulação PIX/Cartão) -->
+  <div class="modal fade" id="payInvoiceModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="formPayInvoice" onsubmit="processPayment(event)">
+          <input type="hidden" id="payInvoiceId">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold">Processar Pagamento de Fatura</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>Fatura <strong id="payInvoiceTitle">#0</strong> - Valor: <strong id="payInvoiceAmount" class="text-success">R$ 0,00</strong></p>
+            <div class="mb-3">
+              <label class="form-label">Forma de Pagamento</label>
+              <select id="paymentMethod" class="form-select">
+                <option value="PIX">PIX (Instantâneo)</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                <option value="Boleto Bancário">Boleto Bancário</option>
+              </select>
+            </div>
+            <div class="alert alert-info small">
+              <i class="bi bi-info-circle me-1"></i> Se esta conta estiver temporariamente suspensa por atraso, a confirmação do pagamento reativará o serviço automaticamente.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i> Confirmar Pagamento</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let clientsData = [];
+    let plansData = [];
+    let accountsData = [];
+    let invoicesData = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllData();
+    });
+
+    function showSection(sectionName, linkEl) {
+      document.querySelectorAll('main > section').forEach(sec => sec.style.display = 'none');
+      document.getElementById(`sec-${sectionName}`).style.display = 'block';
+      if (linkEl) {
+        document.querySelectorAll('.sidebar .nav-link').forEach(nav => nav.classList.remove('active'));
+        linkEl.classList.add('active');
+      }
+    }
+
+    function showAlert(message, type = 'success') {
+      const container = document.getElementById('alertContainer');
+      container.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show shadow-sm" role="alert">
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+    }
+
+    async function loadAllData() {
+      await Promise.all([loadStats(), loadClients(), loadPlans(), loadAccounts(), loadInvoices(), loadLogs()]);
+    }
+
+    async function loadStats() {
+      const res = await fetch('/api/stats');
+      const data = await res.json();
+      document.getElementById('statActiveAccounts').innerText = data.active_accounts;
+      document.getElementById('statSuspendedAccounts').innerText = data.suspended_accounts;
+      document.getElementById('statOverdueInvoices').innerText = data.overdue_invoices;
+      document.getElementById('statTotalRevenue').innerText = `R$ ${data.total_revenue.toFixed(2)}`;
+    }
+
+    async function loadClients() {
+      const res = await fetch('/api/clients');
+      clientsData = await res.json();
+
+      const tbody = document.getElementById('clientsTable');
+      tbody.innerHTML = clientsData.map(c => `
+        <tr>
+          <td>#${c.id}</td>
+          <td class="fw-bold">${c.name}</td>
+          <td>${c.email}</td>
+          <td>${c.phone || '-'}</td>
+          <td>${c.cpf_cnpj || '-'}</td>
+          <td class="small text-muted">${new Date(c.created_at).toLocaleDateString('pt-BR')}</td>
+        </tr>
+      `).join('');
+
+      // Populate Client selects
+      const clientSelect = document.getElementById('accountClientSelect');
+      clientSelect.innerHTML = clientsData.map(c => `<option value="${c.id}">${c.name} (${c.email})</option>`).join('');
+    }
+
+    async function loadPlans() {
+      const res = await fetch('/api/plans');
+      plansData = await res.json();
+
+      const container = document.getElementById('plansContainer');
+      container.innerHTML = plansData.map(p => `
+        <div class="col-md-4">
+          <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+              <h5 class="card-title fw-bold text-primary">${p.name}</h5>
+              <h3 class="my-3">R$ ${p.price.toFixed(2)} <span class="fs-6 text-muted">/mês</span></h3>
+              <ul class="list-unstyled mb-4">
+                <li class="mb-2"><i class="bi bi-hdd me-2 text-secondary"></i> ${p.disk_space_mb / 1000} GB Espaço em Disco</li>
+                <li class="mb-2"><i class="bi bi-arrow-down-up me-2 text-secondary"></i> ${p.bandwidth_gb} GB Tráfego Mensal</li>
+                <li class="mb-2"><i class="bi bi-globe me-2 text-secondary"></i> Até ${p.max_domains} Domínios</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Populate Plan Select
+      const planSelect = document.getElementById('accountPlanSelect');
+      planSelect.innerHTML = plansData.map(p => `<option value="${p.id}">${p.name} - R$ ${p.price.toFixed(2)}</option>`).join('');
+    }
+
+    async function loadAccounts() {
+      const res = await fetch('/api/accounts');
+      accountsData = await res.json();
+
+      // Render dash quick table
+      const dashTbody = document.getElementById('dashAccountsTable');
+      dashTbody.innerHTML = accountsData.slice(0, 5).map(a => `
+        <tr>
+          <td class="fw-bold">${a.domain}</td>
+          <td>${a.client_name}</td>
+          <td>${a.plan_name}</td>
+          <td>${renderAccountStatus(a.status)}</td>
+          <td class="small text-muted">${new Date(a.created_at).toLocaleDateString('pt-BR')}</td>
+        </tr>
+      `).join('');
+
+      // Render main accounts table
+      const tbody = document.getElementById('accountsTable');
+      tbody.innerHTML = accountsData.map(a => `
+        <tr>
+          <td>#${a.id}</td>
+          <td class="fw-bold">${a.domain}</td>
+          <td><code>${a.username}</code></td>
+          <td>${a.client_name}</td>
+          <td>${a.plan_name} (R$ ${a.plan_price.toFixed(2)})</td>
+          <td>${renderAccountStatus(a.status)}</td>
+          <td class="small text-danger">${a.suspension_reason || '-'}</td>
+          <td>
+            ${a.status === 'active' ?
+              `<button class="btn btn-sm btn-outline-danger" onclick="suspendAccount(${a.id})"><i class="bi bi-slash-circle"></i> Suspender</button>` :
+              `<button class="btn btn-sm btn-outline-success" onclick="reactivateAccount(${a.id})"><i class="bi bi-check-circle"></i> Reativar</button>`
+            }
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAccountStatus(status) {
+      if (status === 'active') return '<span class="status-badge bg-active"><i class="bi bi-check-circle me-1"></i> Ativo</span>';
+      if (status === 'suspended') return '<span class="status-badge bg-suspended"><i class="bi bi-slash-circle me-1"></i> Suspenso</span>';
+      return `<span class="status-badge bg-secondary">${status}</span>`;
+    }
+
+    async function loadInvoices() {
+      const res = await fetch('/api/invoices');
+      invoicesData = await res.json();
+
+      const tbody = document.getElementById('invoicesTable');
+      tbody.innerHTML = invoicesData.map(i => `
+        <tr>
+          <td class="fw-bold">#${i.id}</td>
+          <td>
+            <div class="fw-bold">${i.domain}</div>
+            <div class="small text-muted">${i.client_name}</div>
+          </td>
+          <td class="fw-bold text-success">R$ ${i.amount.toFixed(2)}</td>
+          <td>${i.due_date}</td>
+          <td>${renderInvoiceStatus(i.status)}</td>
+          <td>${i.payment_method || '-'}</td>
+          <td>
+            ${i.status !== 'paid' ?
+              `<button class="btn btn-sm btn-success" onclick="openPayModal(${i.id}, ${i.amount})"><i class="bi bi-credit-card me-1"></i> Receber Pagamento</button>` :
+              `<span class="text-muted small"><i class="bi bi-check-all text-success fs-5"></i> Pago</span>`
+            }
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderInvoiceStatus(status) {
+      if (status === 'paid') return '<span class="status-badge bg-paid">Pago</span>';
+      if (status === 'pending') return '<span class="status-badge bg-pending">Pendente</span>';
+      if (status === 'overdue') return '<span class="status-badge bg-overdue"><i class="bi bi-exclamation-triangle me-1"></i> Atrasado</span>';
+      return `<span class="status-badge bg-secondary">${status}</span>`;
+    }
+
+    async function loadLogs() {
+      const res = await fetch('/api/logs');
+      const logs = await res.json();
+      const tbody = document.getElementById('logsTable');
+      tbody.innerHTML = logs.map(l => `
+        <tr>
+          <td>#${l.id}</td>
+          <td><span class="badge bg-secondary">${l.action}</span></td>
+          <td>${l.details}</td>
+          <td class="small text-muted">${new Date(l.created_at).toLocaleString('pt-BR')}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function createClient(e) {
+      e.preventDefault();
+      const body = {
+        name: document.getElementById('clientName').value,
+        email: document.getElementById('clientEmail').value,
+        phone: document.getElementById('clientPhone').value,
+        cpf_cnpj: document.getElementById('clientCpf').value
+      };
+
+      const res = await fetch('/api/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('newClientModal')).hide();
+        document.getElementById('formNewClient').reset();
+        showAlert('Cliente cadastrado com sucesso!');
+        loadAllData();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Erro ao criar cliente');
+      }
+    }
+
+    async function createAccount(e) {
+      e.preventDefault();
+      const body = {
+        client_id: parseInt(document.getElementById('accountClientSelect').value),
+        plan_id: parseInt(document.getElementById('accountPlanSelect').value),
+        domain: document.getElementById('accountDomain').value,
+        username: document.getElementById('accountUsername').value
+      };
+
+      const res = await fetch('/api/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (res.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('newAccountModal')).hide();
+        document.getElementById('formNewAccount').reset();
+        showAlert('Conta de hospedagem criada com sucesso e fatura inicial gerada!');
+        loadAllData();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Erro ao criar conta');
+      }
+    }
+
+    async function suspendAccount(id) {
+      if (!confirm('Deseja realmente suspender esta conta?')) return;
+      const res = await fetch(`/api/accounts/${id}/suspend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Suspenso manualmente pelo painel' })
+      });
+      if (res.ok) {
+        showAlert('Conta suspensa com sucesso.', 'warning');
+        loadAllData();
+      }
+    }
+
+    async function reactivateAccount(id) {
+      const res = await fetch(`/api/accounts/${id}/reactivate`, { method: 'POST' });
+      if (res.ok) {
+        showAlert('Conta reativada com sucesso.', 'success');
+        loadAllData();
+      }
+    }
+
+    function openPayModal(invoiceId, amount) {
+      document.getElementById('payInvoiceId').value = invoiceId;
+      document.getElementById('payInvoiceTitle').innerText = `#${invoiceId}`;
+      document.getElementById('payInvoiceAmount').innerText = `R$ ${amount.toFixed(2)}`;
+      new bootstrap.Modal(document.getElementById('payInvoiceModal')).show();
+    }
+
+    async function processPayment(e) {
+      e.preventDefault();
+      const invoiceId = document.getElementById('payInvoiceId').value;
+      const method = document.getElementById('paymentMethod').value;
+
+      const res = await fetch('/api/payments/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invoice_id: parseInt(invoiceId), payment_method: method })
+      });
+
+      if (res.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('payInvoiceModal')).hide();
+        showAlert('Pagamento recebido! Se a conta estava suspensa, foi reativada automaticamente.', 'success');
+        loadAllData();
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Erro ao processar pagamento');
+      }
+    }
+
+    async function triggerOverdueCheck(days) {
+      const res = await fetch('/api/cron/check-suspensions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ days })
+      });
+      const data = await res.json();
+      showAlert(`Rotina executada! ${data.result.suspended_accounts.length} conta(s) foi(ram) temporariamente suspensa(s) por atraso >= 7 dias.`, 'info');
+      loadAllData();
+    }
+  </script>
+</body>
+</html>
