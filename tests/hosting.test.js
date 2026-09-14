@@ -114,4 +114,22 @@ describe('Revenda de Hospedagem - System Tests', () => {
     acc = HostingService.getHostingAccountById(accountId);
     expect(acc.status).toBe('active');
   });
+
+  test('7. Security: Must NOT leak server technology details (X-Powered-By) and leak internal error details on 500', async () => {
+    const res = await request(app).get('/api/stats');
+    expect(res.headers['x-powered-by']).toBeUndefined();
+
+    // Mock service method to simulate internal error
+    const originalMethod = HostingService.getAllClients;
+    HostingService.getAllClients = jest.fn().mockImplementation(() => {
+      throw new Error('Database connection failed: confidential_db_key_or_stack_trace');
+    });
+
+    const errRes = await request(app).get('/api/clients');
+    expect(errRes.statusCode).toBe(500);
+    expect(errRes.body.error).toBe('Internal Server Error');
+    expect(errRes.body.error).not.toContain('confidential_db_key_or_stack_trace');
+
+    HostingService.getAllClients = originalMethod;
+  });
 });
