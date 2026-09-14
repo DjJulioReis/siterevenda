@@ -5,6 +5,7 @@ const HostingService = require('./hostingService');
 
 const app = express();
 
+app.disable('x-powered-by');
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
@@ -30,7 +31,8 @@ app.get('/api/stats', (req, res) => {
       total_revenue: totalPaid
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error fetching stats:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -40,7 +42,8 @@ app.get('/api/clients', (req, res) => {
     const clients = HostingService.getAllClients();
     res.json(clients);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error fetching clients:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -63,7 +66,8 @@ app.get('/api/plans', (req, res) => {
     const plans = HostingService.getAllPlans();
     res.json(plans);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error fetching plans:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -73,7 +77,8 @@ app.get('/api/accounts', (req, res) => {
     const accounts = HostingService.getAllHostingAccounts();
     res.json(accounts);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error fetching accounts:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -115,7 +120,8 @@ app.get('/api/invoices', (req, res) => {
     const invoices = HostingService.getAllInvoices();
     res.json(invoices);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error fetching invoices:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -157,7 +163,8 @@ app.post('/api/cron/check-suspensions', (req, res) => {
       result
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error running suspension check:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -167,7 +174,8 @@ app.get('/api/logs', (req, res) => {
     const logs = HostingService.getLogs();
     res.json(logs);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error fetching logs:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
