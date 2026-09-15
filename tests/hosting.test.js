@@ -114,4 +114,27 @@ describe('Revenda de Hospedagem - System Tests', () => {
     acc = HostingService.getHostingAccountById(accountId);
     expect(acc.status).toBe('active');
   });
+
+  test('7. Security: Must reject invalid client email address format', async () => {
+    const res = await request(app)
+      .post('/api/clients')
+      .send({
+        name: 'Usuário Inválido',
+        email: 'email-invalido-sem-arroba'
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toBe('Formato de email inválido');
+  });
+
+  test('8. Security: Must reject invalid days parameter in cron check suspensions', async () => {
+    const res = await request(app)
+      .post('/api/cron/check-suspensions')
+      .send({
+        days: 'invalid_number'
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toBe('Parâmetro days deve ser um número inteiro não negativo');
+  });
 });
