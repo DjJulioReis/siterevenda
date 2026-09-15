@@ -3,6 +3,12 @@ const db = require('./database');
 class HostingService {
   // Client Methods
   static createClient({ name, email, phone, cpf_cnpj }) {
+    // Security: Validate email format to prevent storing invalid data or exposing internal DB errors
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || typeof email !== 'string' || !emailRegex.test(email.trim())) {
+      throw new Error('Formato de email inválido');
+    }
+
     const stmt = db.prepare(`
       INSERT INTO clients (name, email, phone, cpf_cnpj)
       VALUES (?, ?, ?, ?)
@@ -190,9 +196,15 @@ class HostingService {
 
   // Automated Overdue Check (Cortar temporariamente se tiver 7 dias ou mais de atraso)
   static checkOverdueAndSuspendAccounts(daysThreshold = 7) {
+    // Security: Validate parameter to prevent NaN calculations and RangeError exceptions
+    const days = Number(daysThreshold);
+    if (isNaN(days) || days < 0) {
+      throw new Error('Parâmetro de dias deve ser um número válido e não negativo');
+    }
+
     // Calculate reference date (today minus daysThreshold days)
     const refDate = new Date();
-    refDate.setDate(refDate.getDate() - daysThreshold);
+    refDate.setDate(refDate.getDate() - days);
     const refDateStr = refDate.toISOString().split('T')[0];
 
     // Find all invoices that are pending or overdue, with due_date <= refDateStr
