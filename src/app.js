@@ -30,7 +30,8 @@ app.get('/api/stats', (req, res) => {
       total_revenue: totalPaid
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 
@@ -40,7 +41,8 @@ app.get('/api/clients', (req, res) => {
     const clients = HostingService.getAllClients();
     res.json(clients);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 
@@ -63,7 +65,8 @@ app.get('/api/plans', (req, res) => {
     const plans = HostingService.getAllPlans();
     res.json(plans);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 
@@ -73,7 +76,8 @@ app.get('/api/accounts', (req, res) => {
     const accounts = HostingService.getAllHostingAccounts();
     res.json(accounts);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 
@@ -115,7 +119,8 @@ app.get('/api/invoices', (req, res) => {
     const invoices = HostingService.getAllInvoices();
     res.json(invoices);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 
@@ -157,7 +162,8 @@ app.post('/api/cron/check-suspensions', (req, res) => {
       result
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 
@@ -167,7 +173,8 @@ app.get('/api/logs', (req, res) => {
     const logs = HostingService.getLogs();
     res.json(logs);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno no servidor' });
   }
 });
 

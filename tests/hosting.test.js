@@ -114,4 +114,20 @@ describe('Revenda de Hospedagem - System Tests', () => {
     acc = HostingService.getHostingAccountById(accountId);
     expect(acc.status).toBe('active');
   });
+
+  test('7. Must return generic internal server error message without leaking sensitive details on 500', async () => {
+    const originalGetClients = HostingService.getAllClients;
+    HostingService.getAllClients = () => {
+      throw new Error('Sensitive DB connection details or internal stack trace');
+    };
+
+    const res = await request(app).get('/api/clients');
+
+    // Restore original method
+    HostingService.getAllClients = originalGetClients;
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body.error).toBe('Erro interno no servidor');
+    expect(res.body.error).not.toContain('Sensitive DB connection details');
+  });
 });
