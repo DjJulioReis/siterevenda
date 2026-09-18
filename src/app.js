@@ -50,6 +50,10 @@ app.post('/api/clients', (req, res) => {
     if (!name || !email) {
       return res.status(400).json({ error: 'Nome e email são obrigatórios' });
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (typeof email !== 'string' || !emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Formato de email inválido' });
+    }
     const client = HostingService.createClient({ name, email, phone, cpf_cnpj });
     res.status(201).json(client);
   } catch (err) {
