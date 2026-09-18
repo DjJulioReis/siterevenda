@@ -29,6 +29,20 @@ describe('Revenda de Hospedagem - System Tests', () => {
     clientId = res.body.id;
   });
 
+  test('1b. Must reject client creation with invalid email format', async () => {
+    const res = await request(app)
+      .post('/api/clients')
+      .send({
+        name: 'Cliente Invalido',
+        email: 'email-invalido-sem-arroba',
+        phone: '11999998888',
+        cpf_cnpj: '123.456.789-00'
+      });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toBe('Formato de email inválido');
+  });
+
   test('2. Must create hosting account and auto-generate initial invoice', async () => {
     const res = await request(app)
       .post('/api/accounts')

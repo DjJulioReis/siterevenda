@@ -3,6 +3,12 @@ const db = require('./database');
 class HostingService {
   // Client Methods
   static createClient({ name, email, phone, cpf_cnpj }) {
+    // Validate email input format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || typeof email !== 'string' || !emailRegex.test(email)) {
+      throw new Error('Formato de email inválido');
+    }
+
     const stmt = db.prepare(`
       INSERT INTO clients (name, email, phone, cpf_cnpj)
       VALUES (?, ?, ?, ?)
