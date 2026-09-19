@@ -114,4 +114,24 @@ describe('Revenda de Hospedagem - System Tests', () => {
     acc = HostingService.getHostingAccountById(accountId);
     expect(acc.status).toBe('active');
   });
+
+  test('7. Must reject invalid or negative days parameter in cron check suspensions', async () => {
+    // Test negative days
+    const resNeg = await request(app)
+      .post('/api/cron/check-suspensions')
+      .send({ days: -5 });
+    expect(resNeg.statusCode).toBe(400);
+    expect(resNeg.body.error).toContain('não negativo');
+
+    // Test non-integer/invalid days
+    const resInvalid = await request(app)
+      .post('/api/cron/check-suspensions')
+      .send({ days: 'invalid' });
+    expect(resInvalid.statusCode).toBe(400);
+    expect(resInvalid.body.error).toContain('não negativo');
+
+    // Ensure account remains active
+    const acc = HostingService.getHostingAccountById(accountId);
+    expect(acc.status).toBe('active');
+  });
 });
