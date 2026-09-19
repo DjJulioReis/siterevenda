@@ -149,7 +149,11 @@ app.post('/api/payments/pay', (req, res) => {
 // Cron / Automation endpoint (Checks 7-day overdue accounts)
 app.post('/api/cron/check-suspensions', (req, res) => {
   try {
-    const days = req.body.days !== undefined ? parseInt(req.body.days, 10) : 7;
+    const daysRaw = req.body.days !== undefined ? req.body.days : 7;
+    const days = Number(daysRaw);
+    if (isNaN(days) || days < 0 || !Number.isInteger(days)) {
+      return res.status(400).json({ error: 'O parâmetro de dias deve ser um número inteiro não negativo' });
+    }
     const result = HostingService.checkOverdueAndSuspendAccounts(days);
     res.json({
       success: true,
@@ -157,7 +161,7 @@ app.post('/api/cron/check-suspensions', (req, res) => {
       result
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
