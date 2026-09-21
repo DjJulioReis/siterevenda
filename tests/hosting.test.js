@@ -114,4 +114,22 @@ describe('Revenda de Hospedagem - System Tests', () => {
     acc = HostingService.getHostingAccountById(accountId);
     expect(acc.status).toBe('active');
   });
+
+  test('7. Security: Must reject invalid or negative days values in overdue suspension check', async () => {
+    // Attempt with negative days threshold directly on service
+    expect(() => HostingService.checkOverdueAndSuspendAccounts(-5)).toThrow('O parâmetro de dias deve ser um número inteiro não negativo');
+    expect(() => HostingService.checkOverdueAndSuspendAccounts(NaN)).toThrow('O parâmetro de dias deve ser um número inteiro não negativo');
+    expect(() => HostingService.checkOverdueAndSuspendAccounts(1.5)).toThrow('O parâmetro de dias deve ser um número inteiro não negativo');
+
+    // Attempt with negative days threshold via API endpoint
+    const resNegative = await request(app)
+      .post('/api/cron/check-suspensions')
+      .send({ days: -10 });
+    expect(resNegative.statusCode).toBe(400);
+    expect(resNegative.body.error).toBeDefined();
+
+    // Verify account is still active and was NOT suspended by negative days input
+    const acc = HostingService.getHostingAccountById(accountId);
+    expect(acc.status).toBe('active');
+  });
 });
