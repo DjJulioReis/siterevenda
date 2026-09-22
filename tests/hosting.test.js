@@ -114,4 +114,18 @@ describe('Revenda de Hospedagem - System Tests', () => {
     acc = HostingService.getHostingAccountById(accountId);
     expect(acc.status).toBe('active');
   });
+
+  test('7. Must return generic internal server error on 500 status without leaking details', async () => {
+    const spy = jest.spyOn(HostingService, 'getAllClients').mockImplementation(() => {
+      throw new Error('Database connection failed with credentials db_pass_123');
+    });
+
+    const res = await request(app).get('/api/clients');
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body).toEqual({ error: 'Internal server error' });
+    expect(res.body.error).not.toContain('db_pass_123');
+
+    spy.mockRestore();
+  });
 });
