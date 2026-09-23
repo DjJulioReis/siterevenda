@@ -30,7 +30,8 @@ app.get('/api/stats', (req, res) => {
       total_revenue: totalPaid
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error in /api/stats:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
@@ -40,7 +41,8 @@ app.get('/api/clients', (req, res) => {
     const clients = HostingService.getAllClients();
     res.json(clients);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error in /api/clients:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
@@ -63,7 +65,8 @@ app.get('/api/plans', (req, res) => {
     const plans = HostingService.getAllPlans();
     res.json(plans);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error in /api/plans:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
@@ -73,7 +76,8 @@ app.get('/api/accounts', (req, res) => {
     const accounts = HostingService.getAllHostingAccounts();
     res.json(accounts);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error in /api/accounts:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
@@ -115,7 +119,8 @@ app.get('/api/invoices', (req, res) => {
     const invoices = HostingService.getAllInvoices();
     res.json(invoices);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error in /api/invoices:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
@@ -157,7 +162,8 @@ app.post('/api/cron/check-suspensions', (req, res) => {
       result
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error in /api/cron/check-suspensions:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
@@ -167,7 +173,8 @@ app.get('/api/logs', (req, res) => {
     const logs = HostingService.getLogs();
     res.json(logs);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error in /api/logs:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
