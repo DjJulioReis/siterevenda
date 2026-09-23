@@ -114,4 +114,15 @@ describe('Revenda de Hospedagem - System Tests', () => {
     acc = HostingService.getHostingAccountById(accountId);
     expect(acc.status).toBe('active');
   });
+
+  test('7. Must handle 500 error securely without leaking internal details', async () => {
+    jest.spyOn(HostingService, 'getAllClients').mockImplementationOnce(() => {
+      throw new Error('Sensitive DB connection detail or query error');
+    });
+
+    const res = await request(app).get('/api/clients');
+    expect(res.statusCode).toBe(500);
+    expect(res.body.error).toBe('Erro interno do servidor');
+    expect(res.body.error).not.toContain('Sensitive DB connection detail');
+  });
 });
