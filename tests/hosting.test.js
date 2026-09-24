@@ -114,4 +114,23 @@ describe('Revenda de Hospedagem - System Tests', () => {
     acc = HostingService.getHostingAccountById(accountId);
     expect(acc.status).toBe('active');
   });
+
+  test('7. Must reject invalid or negative days parameter in cron suspension check', async () => {
+    // Test API route validation
+    const resNegative = await request(app)
+      .post('/api/cron/check-suspensions')
+      .send({ days: -5 });
+    expect(resNegative.statusCode).toBe(400);
+    expect(resNegative.body.error).toContain('Parâmetro "days" deve ser um número inteiro não negativo');
+
+    const resInvalid = await request(app)
+      .post('/api/cron/check-suspensions')
+      .send({ days: 'invalid' });
+    expect(resInvalid.statusCode).toBe(400);
+    expect(resInvalid.body.error).toContain('Parâmetro "days" deve ser um número inteiro não negativo');
+
+    // Test HostingService method direct validation
+    expect(() => HostingService.checkOverdueAndSuspendAccounts(-1)).toThrow('O limite de dias deve ser um número inteiro não negativo');
+    expect(() => HostingService.checkOverdueAndSuspendAccounts(NaN)).toThrow('O limite de dias deve ser um número inteiro não negativo');
+  });
 });
