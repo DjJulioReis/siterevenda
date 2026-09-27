@@ -190,9 +190,13 @@ class HostingService {
 
   // Automated Overdue Check (Cortar temporariamente se tiver 7 dias ou mais de atraso)
   static checkOverdueAndSuspendAccounts(daysThreshold = 7) {
-    // Calculate reference date (today minus daysThreshold days)
+    const threshold = Number(daysThreshold);
+    if (!Number.isInteger(threshold) || threshold < 0) {
+      throw new Error('daysThreshold deve ser um número inteiro não negativo');
+    }
+
     const refDate = new Date();
-    refDate.setDate(refDate.getDate() - daysThreshold);
+    refDate.setDate(refDate.getDate() - threshold);
     const refDateStr = refDate.toISOString().split('T')[0];
 
     // Find all invoices that are pending or overdue, with due_date <= refDateStr
