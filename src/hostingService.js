@@ -190,6 +190,12 @@ class HostingService {
 
   // Automated Overdue Check (Cortar temporariamente se tiver 7 dias ou mais de atraso)
   static checkOverdueAndSuspendAccounts(daysThreshold = 7) {
+    // Validate input: daysThreshold must be a non-negative integer
+    const parsedDays = Number(daysThreshold);
+    if (!Number.isInteger(parsedDays) || parsedDays < 0) {
+      throw new Error('O parâmetro de dias deve ser um número inteiro não negativo.');
+    }
+
     // Calculate reference date (today minus daysThreshold days)
     const refDate = new Date();
     refDate.setDate(refDate.getDate() - daysThreshold);
