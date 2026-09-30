@@ -114,4 +114,23 @@ describe('Revenda de Hospedagem - System Tests', () => {
     acc = HostingService.getHostingAccountById(accountId);
     expect(acc.status).toBe('active');
   });
+
+  test('7. Must validate days parameter for overdue checks and reject negative numbers', async () => {
+    // Direct service method check
+    expect(() => HostingService.checkOverdueAndSuspendAccounts(-1)).toThrow('Número de dias inválido');
+    expect(() => HostingService.checkOverdueAndSuspendAccounts('invalid')).toThrow('Número de dias inválido');
+
+    // API endpoint check
+    const resNegative = await request(app)
+      .post('/api/cron/check-suspensions')
+      .send({ days: -5 });
+    expect(resNegative.statusCode).toBe(400);
+    expect(resNegative.body.error).toBe('Número de dias inválido');
+
+    const resInvalid = await request(app)
+      .post('/api/cron/check-suspensions')
+      .send({ days: 'abc' });
+    expect(resInvalid.statusCode).toBe(400);
+    expect(resInvalid.body.error).toBe('Número de dias inválido');
+  });
 });

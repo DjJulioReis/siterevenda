@@ -149,7 +149,11 @@ app.post('/api/payments/pay', (req, res) => {
 // Cron / Automation endpoint (Checks 7-day overdue accounts)
 app.post('/api/cron/check-suspensions', (req, res) => {
   try {
-    const days = req.body.days !== undefined ? parseInt(req.body.days, 10) : 7;
+    const daysRaw = req.body && req.body.days !== undefined ? req.body.days : 7;
+    const days = parseInt(daysRaw, 10);
+    if (isNaN(days) || days < 0) {
+      return res.status(400).json({ error: 'Número de dias inválido' });
+    }
     const result = HostingService.checkOverdueAndSuspendAccounts(days);
     res.json({
       success: true,

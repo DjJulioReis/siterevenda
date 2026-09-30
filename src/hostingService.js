@@ -190,6 +190,11 @@ class HostingService {
 
   // Automated Overdue Check (Cortar temporariamente se tiver 7 dias ou mais de atraso)
   static checkOverdueAndSuspendAccounts(daysThreshold = 7) {
+    const days = Number(daysThreshold);
+    if (isNaN(days) || days < 0) {
+      throw new Error('Número de dias inválido');
+    }
+
     // Calculate reference date (today minus daysThreshold days)
     const refDate = new Date();
     refDate.setDate(refDate.getDate() - daysThreshold);
